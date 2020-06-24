@@ -216,6 +216,9 @@ upstream {{ $upstream_name }} {
 {{/* Get the HTTPS_METHOD defined by containers w/ the same vhost, falling back to "redirect" */}}
 {{ $https_method := or (first (groupByKeys $containers "Env.HTTPS_METHOD")) "redirect" }}
 
+{{/* Get the NON_WWW domain defined by containers w/ the same vhost, falling back to "None" */}}
+{{ $non_www := or (first (groupByKeys $containers "Env.NON_WWW")) "None" }}
+
 {{/* Get the SSL_POLICY defined by containers w/ the same vhost, falling back to empty string (use default) */}}
 {{ $ssl_policy := or (first (groupByKeys $containers "Env.SSL_POLICY")) "" }}
 
@@ -260,7 +263,11 @@ server {
 		try_files $uri =404;
 		break;
 	}
-	
+	{{ if ne $non_www "None"}}
+	location / {
+		return 301 https://{{$non_www}}$request_uri;
+	}	
+	{{ end }}
 	location / {
 		return 301 https://$host$request_uri;
 	}
